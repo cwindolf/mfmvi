@@ -13,6 +13,14 @@ def dprint(*args, **kwargs):
         print(*args, **kwargs)
 
 
+debug2 = True
+
+
+def dprint2(*args, **kwargs):
+    if debug:
+        print(*args, **kwargs)
+
+
 # -- E-step formulas
 
 
@@ -54,7 +62,9 @@ def NtK_rnt_Nt_(qK, Lnt, alphatK):
 
 
 def alphatK_(alpha0, NtK):
-    return alpha0 + NtK
+    alphatK = alpha0 + NtK
+    dprint(f"{alphatK=}")
+    return alphatK
 
 
 # -- M-step formulas
@@ -64,19 +74,18 @@ def xbarkp_(rnk, Nk, Xnp):
     Nxbarkp = rnk.T @ Xnp
     dprint(f"{Nxbarkp=}")
     xbarkp = Nxbarkp.clone()
-    dprint(f"{xbarkp[Nk > 0].shape}")
-    dprint(f"{xbarkp[Nk > 0].shape}")
+    dprint(f"{xbarkp[Nk > 0].shape=}")
     xbarkp[Nk > 0] /= Nk[Nk > 0, None]
     return Nxbarkp, xbarkp
 
 
 def Skpp_(rnk, Nk, Xnp, xbarkp=None):
     if xbarkp is None:
-        xbarkp = xbarkp_(rnk, Nk, Xnp)
+        Nxbarkp, xbarkp = xbarkp_(rnk, Nk, Xnp)
     Xcent = Xnp[:, None, :] - xbarkp[None, :, :]
     dprint(f"{Xcent.shape=}")
     NSkpp = torch.einsum("ik,ikd,ike->kde", rnk, Xcent, Xcent)
-    dprint(f"{NSkpp.max()=} {16*torch.abs(NSkpp).max()=}")
+    dprint(f"{NSkpp.max()=}")
     dprint(f"{NSkpp.shape=}")
     dprint(f"{torch.det(NSkpp)=}")
     Skpp = NSkpp.clone()
@@ -111,8 +120,8 @@ def Wkpp_(nu0, beta0, m0p, Nk, xbarkp, NSkpp, W0inv):
     Winvkpp = W0inv[None, :, :] + NSkpp + covfix
     dprint(f"{torch.det(Winvkpp)=}")
     dprint(f"{torch.det(Winvkpp / Nk.max())=}")
-    # W = torch.linalg.inv(Winvkpp / Nk.max()) / Nk.max()
-    Wkpp = torch.linalg.inv(Winvkpp)
+    Wkpp = torch.linalg.inv(Winvkpp / Nk.max()) / Nk.max()
+    # Wkpp = torch.linalg.inv(Winvkpp)
     dprint(f"{torch.det(Wkpp)=}")
     return Wkpp, Winvkpp
 
